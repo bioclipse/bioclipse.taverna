@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/41/jsfTest/src/java/jsftest
+END
+ApplicationBean.java
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/35/jsfTest/src/java/jsftest/ApplicationBean.java
+END
+RequestBean.java
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/35/jsfTest/src/java/jsftest/RequestBean.java
+END
+WorkflowSubmissionPage.java
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/!svn/ver/41/jsfTest/src/java/jsftest/WorkflowSubmissionPage.java
+END
+SessionBean.java
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/41/jsfTest/src/java/jsftest/SessionBean.java
+END
+WorkflowResultsPage.java
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/41/jsfTest/src/java/jsftest/WorkflowResultsPage.java
+END
+JobDetails.java
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/31/jsfTest/src/java/jsftest/JobDetails.java
+END

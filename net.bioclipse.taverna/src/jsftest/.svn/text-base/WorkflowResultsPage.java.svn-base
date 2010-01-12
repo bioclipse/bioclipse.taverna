@@ -1,0 +1,538 @@
+/*
+ * results.java
+ *
+ * Created on 23-Sep-2009, 13:34:17
+ * Copyright me
+ */
+package jsftest;
+
+import com.icesoft.faces.component.ext.HtmlInputText;
+import com.icesoft.faces.component.ext.HtmlPanelGrid;
+import com.icesoft.faces.component.paneltabset.PanelTab;
+import com.icesoft.faces.component.paneltabset.PanelTabSet;
+import java.util.List;
+import javax.faces.component.UIComponent;
+import com.icesoft.faces.component.ext.HtmlDataTable;
+import com.icesoft.faces.component.ext.HtmlOutputText;
+import com.icesoft.faces.component.ext.RowSelectorEvent;
+import com.sun.rave.web.ui.appbase.AbstractPageBean;
+import java.io.IOException;
+import javax.faces.FacesException;
+import javax.faces.el.PropertyNotFoundException;
+import javax.faces.event.ValueChangeEvent;
+import javax.xml.xpath.*;
+import javax.xml.parsers.*;
+import org.w3c.dom.*;
+import jsftest.JobDetails;
+import org.xml.sax.HandlerBase;
+import org.xml.sax.SAXException;
+import tavernacon.DataValue;
+import tavernacon.RESTClient;
+import org.xml.sax.helpers.DefaultHandler;
+
+/**
+ * <p>Page bean that corresponds to a similarly named JSP page.  This
+ * class contains component definitions (and initialization code) for
+ * all components that you have defined on this page, as well as
+ * lifecycle methods and event handlers where you may add behavior
+ * to respond to incoming events.</p>
+ */
+public class WorkflowResultsPage extends AbstractPageBean {
+
+    String[] results;
+    public DataValue[] outputs;
+    static JobDetails[] jobDetails;
+    static String selectedJobID;
+    SessionBean sessionBean = new SessionBean();
+    /*public String[] getOutputs(){
+    return showOutputs();
+    }
+
+    public void setOutputs(String[] s){
+    this.outputs = s;
+    }*/
+    public static int numberOfJobs = 4;
+    public static PanelTabSet panelTabSet = new PanelTabSet();
+    // <editor-fold defaultstate="collapsed" desc="Managed Component Definition">
+    private int __placeholder;
+
+    /**
+     * <p>Automatically managed component initialization.  <strong>WARNING:</strong>
+     * This method is automatically generated, so any user-specified code inserted
+     * here is subject to being replaced.</p>
+     */
+    private void _init() throws Exception {
+    }
+    public static HtmlDataTable resultsTable = new HtmlDataTable();
+
+    public HtmlDataTable getresultsTable() {
+        return resultsTable;
+    }
+
+    public void setresultsTable(HtmlDataTable hdt) {
+        this.resultsTable = hdt;
+    }
+    public static HtmlDataTable outputsTable = new HtmlDataTable();
+
+    public HtmlDataTable getOutputsTable() {
+        return outputsTable;
+    }
+
+    public void setOutputsTable(HtmlDataTable hdt) {
+        this.outputsTable = hdt;
+    }
+
+    public PanelTabSet getpanelTabSet() {
+        this.panelTabSet = new PanelTabSet();
+        List<UIComponent> children = this.panelTabSet.getChildren();
+
+        for (int i = 0; i < numberOfJobs; i++) {
+            PanelTab panelTab = new PanelTab();
+            HtmlPanelGrid htmlPanelGrid = new HtmlPanelGrid();
+            HtmlInputText htmlInputText = new HtmlInputText();
+
+            htmlPanelGrid.getChildren().add(htmlInputText);
+            panelTab.getChildren().add(htmlPanelGrid);
+
+            children.add(panelTab);
+        }
+        return panelTabSet;
+    }
+
+    public void setpanelTabSet(PanelTabSet hdt) {
+        this.panelTabSet = new PanelTabSet();
+        List<UIComponent> children = this.panelTabSet.getChildren();
+
+        for (int i = 0; i < numberOfJobs; i++) {
+            PanelTab panelTab = new PanelTab();
+            HtmlPanelGrid htmlPanelGrid = new HtmlPanelGrid();
+            HtmlInputText htmlInputText = new HtmlInputText();
+
+            htmlPanelGrid.getChildren().add(htmlInputText);
+            panelTab.getChildren().add(htmlPanelGrid);
+
+            children.add(panelTab);
+        }
+    }
+    public static HtmlOutputText outs = new HtmlOutputText();
+
+    public HtmlOutputText getouts() {
+        return outs;
+    }
+
+    public void setouts(HtmlOutputText hot) {
+        this.outs = hot;
+    }
+    public static HtmlOutputText outHeader = new HtmlOutputText();
+
+    public HtmlOutputText getoutHeader() {
+        return outHeader;
+    }
+
+    public void setoutHeader(HtmlOutputText hot) {
+        this.outHeader = hot;
+    }
+    private static boolean jobsVis = false;
+
+    public boolean getjobsVis() {
+        return jobsVis;
+    }
+
+    public void setjobsVis(boolean jv) {
+        this.jobsVis = jv;
+    }
+    private static boolean outsVis = false;
+
+    public boolean getoutsVis() {
+        return outsVis;
+    }
+
+    public void setoutsVis(boolean ov) {
+        this.outsVis = ov;
+    }
+    private static boolean popupVis = false;
+
+    public boolean getpopupVis() {
+        return popupVis;
+    }
+
+    public void setpopupVis(boolean pv) {
+        this.popupVis = pv;
+    }
+    public static boolean containsErrors = false;
+
+    public boolean getcontainsErrors() {
+        return containsErrors;
+    }
+
+    public void setcontainsErrors(boolean bo) {
+        this.containsErrors = bo;
+    }
+
+    //icon displayed in the header to flag if there has been any errrors
+    public static String errorsIcon = "";
+
+    public String getErrorsIcon() {
+        return errorsIcon;
+    }
+
+    public void setErrorsIcon(String bo) {
+        this.errorsIcon = bo;
+    }
+
+    //String displayed as a tooltip in header of table to flag if there has been any errors
+    public static String errorsMessage = "Contains no errors";
+
+    public String getErrorsMessage() {
+        return errorsMessage;
+    }
+
+    public void setErrorsMessage(String bo) {
+        this.errorsMessage = bo;
+    }
+
+    // </editor-fold>
+    /**
+     * <p>Construct a new Page bean instance.</p>
+     */
+    public WorkflowResultsPage() {
+    }
+
+    /**
+     * <p>Callback method that is called whenever a page is navigated to,
+     * either directly via a URL, or indirectly via page navigation.
+     * Customize this method to acquire resources that will be needed
+     * for event handlers and lifecycle methods, whether or not this
+     * page is performing post back processing.</p>
+     * 
+     * <p>Note that, if the current request is a postback, the property
+     * values of the components do <strong>not</strong> represent any
+     * values submitted with this request.  Instead, they represent the
+     * property values that were saved for this view when it was rendered.</p>
+     */
+    @Override
+    public void init() {
+        // Perform initializations inherited from our superclass
+        super.init();
+        // Perform application initialization that must complete
+        // *before* managed components are initialized
+        // TODO - add your own initialiation code here
+
+        // <editor-fold defaultstate="collapsed" desc="Managed Component Initialization">
+        // Initialize automatically managed components
+        // *Note* - this logic should NOT be modified
+        try {
+            _init();
+        } catch (Exception e) {
+            log("results Initialization Failure", e);
+            throw e instanceof FacesException ? (FacesException) e : new FacesException(e);
+        }
+
+    // </editor-fold>
+    // Perform application initialization that must complete
+    // *after* managed components are initialized
+    // TODO - add your own initialization code here
+    }
+
+    /**
+     * <p>Callback method that is called after the component tree has been
+     * restored, but before any event processing takes place.  This method
+     * will <strong>only</strong> be called on a postback request that
+     * is processing a form submit.  Customize this method to allocate
+     * resources that will be required in your event handlers.</p>
+     */
+    @Override
+    public void preprocess() {
+    }
+
+    /**
+     * <p>Callback method that is called just before rendering takes place.
+     * This method will <strong>only</strong> be called for the page that
+     * will actually be rendered (and not, for example, on a page that
+     * handled a postback and then navigated to a different page).  Customize
+     * this method to allocate resources that will be required for rendering
+     * this page.</p>
+     */
+    @Override
+    public void prerender() {
+    }
+
+    /**
+     * <p>Callback method that is called after rendering is completed for
+     * this request, if <code>init()</code> was called (regardless of whether
+     * or not this was the page that was actually rendered).  Customize this
+     * method to release resources acquired in the <code>init()</code>,
+     * <code>preprocess()</code>, or <code>prerender()</code> methods (or
+     * acquired during execution of an event handler).</p>
+     */
+    @Override
+    public void destroy() {
+    }
+
+    public String rowSelectionListener() {
+
+        showOutputs();
+
+        return null;
+
+    }
+
+    public String showJobs() {
+
+        jobsVis = true;
+
+        try {
+            DocumentBuilderFactory Factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = Factory.newDocumentBuilder();
+            Document doc = builder.parse("http://rpc103.cs.man.ac.uk:8081/taverna-server-0.2.1/rest/jobs");
+            //creating an XPathFactory:
+            XPathFactory factory = XPathFactory.newInstance();
+            //using this factory to create an XPath object:
+            XPath xpath = factory.newXPath();
+            //XPath object created compiles the XPath expression for workflows:
+            //XPathExpression WFExpr = xpath.compile("//dataMap/entry/value/list/value/text()");
+            XPathExpression jobIDExpr = xpath.compile("//Jobs/job/id/text()");
+            Object jobIDResult = jobIDExpr.evaluate(doc, XPathConstants.NODESET);
+            NodeList jobIDNodeList = (NodeList) jobIDResult;
+
+            XPathExpression jobWorkflowExpr = xpath.compile("//Jobs/job/workflow/text()");
+            Object jobWorkflowResult = jobWorkflowExpr.evaluate(doc, XPathConstants.NODESET);
+            NodeList jobWorkflowNodeList = (NodeList) jobWorkflowResult;
+
+            XPathExpression jobStatusExpr = xpath.compile("//Jobs/job/status/text()");
+            Object jobStatusResult = jobStatusExpr.evaluate(doc, XPathConstants.NODESET);
+            NodeList jobStatusNodeList = (NodeList) jobStatusResult;
+
+
+
+            results = new String[jobIDNodeList.getLength()];
+
+            jobDetails = new JobDetails[jobIDNodeList.getLength()];
+            numberOfJobs = jobIDNodeList.getLength();
+            for (int i = 0; i < jobIDNodeList.getLength(); i++) {
+
+                String name = jobWorkflowNodeList.item(i).getNodeValue();
+
+                if (name.equals("1") || name.equals("3")) {
+                    name = "pipeline";
+                }
+                else if (name.equals("41")) {
+                    name = "Paget's disease";
+                }
+                else if (name.equals("39")) {
+                    name = "get_germ_uniprotid";
+                }
+                 else {
+                    name = "ensembl_gene_id_chicken";
+                }
+
+                JobDetails job = new JobDetails(jobIDNodeList.item(i).getNodeValue(),
+                        name, jobStatusNodeList.item(i).getNodeValue());
+
+                jobDetails[i] = job;
+
+            //results[i] = jobIDNodeList.item(i).getNodeValue();
+            }
+
+            resultsTable.setValue(jobDetails);
+
+
+        } catch (Exception e) {
+        }
+
+        return null;
+
+    }
+
+    public String showOutputs() {
+
+        errorsMessage = "Contains no errors";
+
+        outsVis = true;
+
+        JobDetails selectedJob = jobDetails[resultsTable.getRowIndex()];
+        System.out.println();
+        System.out.println(selectedJob.workflow);
+        if (selectedJob.workflow.equals("pipeline")) {
+            outHeader.setValue("Count");
+        } else {
+            outHeader.setValue("Gene_IDs");
+        }
+
+        String selectedJobId = selectedJob.ID;
+        outs.setValue("Outputs for Job " + selectedJobId);
+
+        System.out.println("Selected job ID: " + selectedJobId);
+
+        boolean jobInCache = sessionBean.jobOutputs.containsKey(selectedJobId);
+        System.out.println("Selected job in hashmap: " + jobInCache);
+
+        if (jobInCache == false) {
+
+            try {
+
+                DocumentBuilderFactory Factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = Factory.newDocumentBuilder();
+
+                Document outputsIDDoc = builder.parse("http://rpc103.cs.man.ac.uk:8081/taverna-server-0.2.1/rest/jobs/" + selectedJobId);
+
+                //creating an XPathFactory:
+                XPathFactory factory = XPathFactory.newInstance();
+                //using this factory to create an XPath object:
+                XPath xpath = factory.newXPath();
+
+                XPathExpression outputIDExpr = xpath.compile("//Job/outputs/text()");
+                Object outputIDResult = outputIDExpr.evaluate(outputsIDDoc, XPathConstants.NODESET);
+                NodeList outputIDNodeList = (NodeList) outputIDResult;
+
+                String outputID = outputIDNodeList.item(0).getNodeValue();
+                System.out.println("Output data ID: " + outputID);
+
+                Document outputsDoc = builder.parse("http://rpc103.cs.man.ac.uk:8081/taverna-server-0.2.1/rest/data/" + outputID);
+
+                XPathExpression valueExpr = xpath.compile("//dataMap/entry/value/list/value/text()");
+                //XPathExpression WFExpr = xpath.compile("//Jobs/job/id/text()");
+                Object valueResult = valueExpr.evaluate(outputsDoc, XPathConstants.NODESET);
+                NodeList valueNodeList = (NodeList) valueResult;
+
+                XPathExpression anyContainsErrorExpr = xpath.compile("//dataMap/entry/value/containsError/text()");
+                //XPathExpression WFExpr = xpath.compile("//Jobs/job/id/text()");
+                Object anyContainsErrorResult = anyContainsErrorExpr.evaluate(outputsDoc, XPathConstants.NODESET);
+                NodeList anyContainsErrorNodeList = (NodeList) anyContainsErrorResult;
+
+                if (Boolean.parseBoolean(anyContainsErrorNodeList.item(0).getNodeValue()) == false) {
+                    errorsIcon = "/resources/icons/png/16x16/OK.png";
+                } else {
+                    errorsIcon = "/resources/icons/png/16x16/Error.png";
+                }
+
+                XPathExpression containsErrorExpr = xpath.compile("//dataMap/entry/value/list/value/text()");
+                //XPathExpression WFExpr = xpath.compile("//Jobs/job/id/text()");
+                Object containsErrorResult = containsErrorExpr.evaluate(outputsDoc, XPathConstants.NODESET);
+                NodeList containsErrorNodeList = (NodeList) containsErrorResult;
+
+
+                outputs = new DataValue[valueNodeList.getLength()];
+
+                for (int i = 0; i < valueNodeList.getLength(); i++) {
+
+                    DataValue dv = new DataValue();
+                    dv.setValue(valueNodeList.item(i).getNodeValue());
+                    dv.setList(null);
+                    dv.setErrorValue(null);
+                    dv.setContainsError(Boolean.parseBoolean(containsErrorNodeList.item(i).getNodeValue()));
+                    if (Boolean.parseBoolean(containsErrorNodeList.item(i).getNodeValue()) == true) {
+                        errorsMessage = "Contains errors";//"/resources/icons/png/16x16/OK.png");
+
+                    }
+                    /*else {
+                    dv.setIcon("/resources/icons/png/16x16/Error.png");
+
+
+                    }*/
+                    outputs[i] = dv;
+
+                }
+
+                sessionBean.jobOutputs.put(selectedJobId, outputs);
+                outputsTable.setValue(outputs);
+
+                System.out.println("In HashMap: " + sessionBean.jobOutputs);
+
+                System.out.println("Contains errors: " + outputs[0].getContainsError());
+
+            //sessionBean.jobOutputs.put(selectedJobID, outputs);
+
+            } catch (Exception e) {
+                //outputsTable.setValue("Error: " + e);
+                DataValue dv = new DataValue();
+                dv.setValue("No outputs!");
+                dv.setIcon("/resources/icons/png/16x16/Error.png");
+                errorsIcon = "/resources/icons/png/16x16/Error.png";
+                dv.setContainsError(true);
+                errorsMessage = "Contains errors";
+                outputsTable.setValue(dv);
+                System.out.println(e);
+            }
+        } else {
+            containsErrors = false;
+            errorsIcon = "/resources/icons/png/16x16/OK.png";
+            DataValue[] cachedDataValue = sessionBean.jobOutputs.get(selectedJobId);
+
+            //test for empty array
+            if (cachedDataValue.length<1) {
+                errorsIcon = "/resources/icons/png/16x16/Error.png";
+                errorsMessage = "No output";
+            }
+
+            outputsTable.setValue(cachedDataValue);
+        }
+
+
+        return null;
+
+    }
+
+    //prompts user to confirm job deletion
+    public String confirmDelete() {
+        JobDetails selectedJob = jobDetails[resultsTable.getRowIndex()];
+        selectedJobID = selectedJob.ID;
+        popupVis = true;
+        return null;
+    }
+
+    //cancels the deletion
+    public String cancelDelete() {
+        popupVis = false;
+        return null;
+    }
+
+    //method that sends a delete job request to the server and refreshes the jobs
+    public String deleteJob() {
+
+        popupVis = false;
+
+        RESTClient tavernaRESTClient = new RESTClient();
+        tavernaRESTClient.setBaseURL("http://rpc103.cs.man.ac.uk:8081/taverna-server-0.2.1/rest");
+
+        //JobDetails selectedJob = jobDetails[resultsTable.getRowIndex()];
+
+        //String selectedJobID = selectedJob.ID;
+        long selectedJobIDLong = Long.parseLong(selectedJobID.trim());
+
+        tavernaRESTClient.deleteJob(selectedJobIDLong);
+
+        showJobs();
+
+        return null;
+
+    }
+
+    /**
+     * <p>Return a reference to the scoped data bean.</p>
+     *
+     * @return reference to the scoped data bean
+     */
+    protected ApplicationBean getApplicationBean() {
+        return (ApplicationBean) getBean("ApplicationBean");
+    }
+
+    /**
+     * <p>Return a reference to the scoped data bean.</p>
+     *
+     * @return reference to the scoped data bean
+     */
+    protected RequestBean getRequestBean() {
+        return (RequestBean) getBean("RequestBean");
+    }
+
+    /**
+     * <p>Return a reference to the scoped data bean.</p>
+     *
+     * @return reference to the scoped data bean
+     */
+    protected SessionBean getSessionBean() {
+        return (SessionBean) getBean("SessionBean");
+    }
+}
+
